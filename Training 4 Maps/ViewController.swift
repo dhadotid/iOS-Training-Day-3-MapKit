@@ -9,24 +9,37 @@
 import UIKit
 import MapKit
 
-class ViewController: UIViewController, MKMapViewDelegate {
+class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var lblJarak: UILabel!
     @IBOutlet weak var lblWaktu: UILabel!
+    
+    var gps = CLLocationManager()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         mapView.delegate = self
         
+        gps.delegate = self
+        gps.startUpdatingLocation()
+        gps.requestLocation()
+        gps.requestWhenInUseAuthorization()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        
+        let latTujuan = locations.last?.coordinate.latitude
+        let longTujuan = locations.last?.coordinate.longitude
+        
         //tentukan latlong asal dan latlong tujuan
-        let asal = CLLocationCoordinate2D(latitude: -6.1953083, longitude: 106.7926616)
-        let tujuan = CLLocationCoordinate2D(latitude: -6.2074111, longitude: 106.7952495)
+        let asal = CLLocationCoordinate2D(latitude: -6.2074111, longitude: 106.7952495)
+        let tujuan = CLLocationCoordinate2D(latitude: latTujuan!, longitude: longTujuan!)
         
         //untuk create marker
         let pinAsal = MKPointAnnotation()
-        pinAsal.title = "Imastudio"
+        pinAsal.title = "Lokasi Anda Saat Ini"
         pinAsal.coordinate = asal
         
         let pinTujuan = MKPointAnnotation()
@@ -53,17 +66,22 @@ class ViewController: UIViewController, MKMapViewDelegate {
         //hitung jarak
         let direction = MKDirections(request: mkRequest)
         direction.calculate { (getRoute, error) in
+            
             let jarak = getRoute?.routes[0].distance
             let waktu = getRoute?.routes[0].expectedTravelTime
             let route = getRoute?.routes[0].polyline
             
-            self.lblJarak.text = "Jarak: \(jarak!)km"
-            self.lblWaktu.text = "Waktu: \(waktu!)"
+            self.lblJarak.text = String(jarak!)
+            self.lblWaktu.text = String(waktu!)
             
             self.mapView.addOverlay(route!, level: .aboveRoads)
         }
     }
-
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("error")
+    }
+    
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let gambarRute = MKPolylineRenderer(overlay: overlay)
         gambarRute.lineWidth = 3
